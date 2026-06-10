@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -e
+
+ROOT=$(git rev-parse --show-toplevel)
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [[ -z "$STAGED" ]]; then
+  exit 0
+fi
+
+if echo "$STAGED" | grep -q "^frontend/"; then
+  echo "→ frontend lint + format check..."
+  (cd "$ROOT/frontend" && yarn lint)
+  (cd "$ROOT/frontend" && yarn format)
+fi
+
+# backend + e2e share one cargo workspace — any Rust touch runs workspace-wide
+# clippy. Cheap with the dep cache warm.
+if echo "$STAGED" | grep -qE "^(backend|e2e)/|^Cargo\.(toml|lock)$"; then
+  echo "→ cargo clippy --workspace..."
+  (cd "$ROOT" && cargo clippy --workspace --all-targets -- -D warnings)
+fi

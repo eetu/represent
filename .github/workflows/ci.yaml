@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    name: "Frontend (Svelte)"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: frontend/.node-version
+      # Yarn is vendored (.yarn/releases/*.cjs) and invoked via node — no
+      # corepack (node 25+ dropped the bundle), so this is node-version-agnostic
+      # and stays in step with the Dockerfile's node 26 build stage.
+      - name: Frontend checks
+        run: |
+          yarn() { node .yarn/releases/yarn-*.cjs "$@"; }
+          yarn install --immutable
+          yarn lint
+          yarn format
+          yarn typecheck
+          yarn build
+
+  backend:
+    name: "Backend (Rust workspace)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: "."
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - run: cargo build --workspace --release
+
+  e2e:
+    name: "E2E smoke (stack boots + talks)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: "."
+      # The harness (represent-e2e) boots the backend with DEV_AUTH + a temp
+      # data dir + a stub dist/, then drives the project/file CRUD, bundle
+      # download and SPA fallback over real HTTP. #[ignore] so the backend
+      # job's `cargo test --workspace` skips it; here we build the binary,
+      # then run it explicitly.
+      - run: cargo build -p represent-backend
+      - run: cargo test -p represent-e2e -- --ignored --nocapture

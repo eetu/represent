@@ -1,0 +1,18 @@
+target/
+**/node_modules/
+**/dist/
+**/.svelte-kit/
+.git/
+.github/
+.githooks/
+*.log
+.DS_Store
+.env
+.env.local
+# Not e2e/ — the workspace-deps stage needs e2e/Cargo.toml to parse the cargo
+# workspace. Its src/ is never COPYed (the Dockerfile stubs it), so the
+# test-only crate stays out of the image anyway.
+e2e/src/
+e2e/tests/
+README.md
+SECURITY.md

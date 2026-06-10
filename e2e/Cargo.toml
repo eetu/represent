@@ -1,0 +1,15 @@
+[package]
+name = "represent-e2e"
+version.workspace = true
+edition.workspace = true
+
+# Test-only crate: a `Stack` harness (src/lib.rs) that spawns the real backend
+# binary against a temp data dir + stub dist/, plus the tests in tests/ that
+# drive it. Not built into any image (the Dockerfile only stubs its manifest).
+
+[dependencies]
+tokio = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+anyhow = { workspace = true }
