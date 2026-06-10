@@ -458,6 +458,13 @@
 		flex-direction: column;
 		gap: 1rem;
 	}
+	/* Desktop: let diagrams, tables and the source editor breathe. The
+	   phone-at-the-table column stays narrow. */
+	@media (min-width: 1100px) {
+		.viewer {
+			max-width: 960px;
+		}
+	}
 	.viewer.demo {
 		padding-top: 0.75rem;
 	}
