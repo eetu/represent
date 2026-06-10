@@ -17,7 +17,8 @@
 	},
 	"dependencies": {
 		"dompurify": "^3.3.1",
-		"marked": "^17.0.1"
+		"marked": "^17.0.1",
+		"mermaid": "^11.15.0"
 	},
 	"devDependencies": {
 		"@anarkisti/eslint-config": "^1.0.0",

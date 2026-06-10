@@ -20,6 +20,9 @@ export type Block = {
 	end: number;
 	/** True for `> **note:** …` blockquotes — the removable note artifact. */
 	note: boolean;
+	/** Source of a ```mermaid fence — rendered as a diagram, with `html`
+	 * (the sanitized code block) as the parse-failure fallback. */
+	mermaid: string | null;
 };
 
 // ==text== → <mark>: the syntax the highlight tool writes. Not GFM — a small
@@ -96,7 +99,8 @@ export function renderBlocks(body: string): Block[] {
 		if (token.type === 'space') continue;
 		const html = marked.parser([token]) as string;
 		const note = token.type === 'blockquote' && /^>\s*\*\*note:\*\*/.test(token.raw);
-		blocks.push({ html: DOMPurify.sanitize(html), start, end: pos, note });
+		const mermaid = token.type === 'code' && token.lang === 'mermaid' ? token.text : null;
+		blocks.push({ html: DOMPurify.sanitize(html), start, end: pos, note, mermaid });
 	}
 	return blocks;
 }

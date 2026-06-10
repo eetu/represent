@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Mermaid from '$lib/components/Mermaid.svelte';
 	import type { Block } from '$lib/markdown';
 
 	export type ArtifactHit = {
@@ -84,7 +85,11 @@
 	onpointerout={onPointerOut}
 >
 	{#each blocks as block, idx (block.start)}
-		{#if block.note && onRemoveNote}
+		{#if block.mermaid !== null}
+			<div class="block" data-idx={idx}>
+				<Mermaid source={block.mermaid} fallback={block.html} />
+			</div>
+		{:else if block.note && onRemoveNote}
 			<div class="block note" data-idx={idx}>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify in renderBlocks() -->
 				{@html block.html}
