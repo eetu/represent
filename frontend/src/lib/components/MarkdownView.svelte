@@ -20,12 +20,14 @@
 		large = false,
 		onArtifact,
 		onArtifactLeave,
+		onEditNote,
 		onRemoveNote
 	}: {
 		blocks: Block[];
 		large?: boolean;
 		onArtifact?: (hit: ArtifactHit) => void;
 		onArtifactLeave?: () => void;
+		onEditNote?: (idx: number) => void;
 		onRemoveNote?: (idx: number) => void;
 	} = $props();
 
@@ -86,7 +88,12 @@
 			<div class="block note" data-idx={idx}>
 				<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify in renderBlocks() -->
 				{@html block.html}
-				<button class="notex" title="remove note" onclick={() => onRemoveNote(idx)}>✕</button>
+				<span class="notetools">
+					{#if onEditNote}
+						<button class="notex" title="edit note" onclick={() => onEditNote(idx)}>✎</button>
+					{/if}
+					<button class="notex" title="remove note" onclick={() => onRemoveNote(idx)}>✕</button>
+				</span>
 			</div>
 		{:else}
 			<!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify in renderBlocks() -->
@@ -109,10 +116,14 @@
 	.note {
 		position: relative;
 	}
-	.notex {
+	.notetools {
 		position: absolute;
 		top: 0.35rem;
 		right: 0.25rem;
+		display: flex;
+		gap: 0.1rem;
+	}
+	.notex {
 		background: none;
 		border: none;
 		color: var(--halo-text-muted);
@@ -125,6 +136,9 @@
 	.notex:hover {
 		color: var(--halo-error);
 		background: var(--halo-accent-soft);
+	}
+	.notex[title='edit note']:hover {
+		color: var(--halo-accent);
 	}
 
 	/* Injected markup — scoped selectors can't reach it without :global. */
@@ -205,7 +219,7 @@
 	}
 	.md :global(blockquote) {
 		margin: 0.8em 0;
-		padding: 0.4em 2em 0.4em 1em;
+		padding: 0.4em 3.8em 0.4em 1em;
 		border-left: 3px solid var(--halo-accent);
 		background: var(--halo-bg-light);
 		border-radius: 0 var(--halo-radius) var(--halo-radius) 0;

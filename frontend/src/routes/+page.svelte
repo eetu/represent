@@ -198,6 +198,12 @@
 		border-radius: var(--halo-radius);
 		padding: 0.55rem 0.8rem;
 	}
+	/* Accent border is the focus indicator — drop the UA ring. */
+	input:focus-visible {
+		outline: none;
+		border-color: var(--halo-accent);
+		box-shadow: 0 0 0 3px var(--halo-accent-soft);
+	}
 	button[type='submit'] {
 		font-family: var(--halo-font-heading);
 		font-size: 0.95rem;

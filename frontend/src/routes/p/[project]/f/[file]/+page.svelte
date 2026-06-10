@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { fly } from 'svelte/transition';
+
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -8,10 +10,12 @@
 	import TimerBar from '$lib/components/TimerBar.svelte';
 	import {
 		findInBlock,
+		getNoteText,
 		insertNote,
 		parseFrontmatter,
 		removeBlock,
 		renderBlocks,
+		replaceNote,
 		toggleWrap,
 		unwrapArtifact
 	} from '$lib/markdown';
@@ -31,8 +35,20 @@
 
 	const parsed = $derived(src === null ? null : parseFrontmatter(src));
 	const blocks = $derived(parsed === null ? [] : renderBlocks(parsed.body));
+
+	// The slide actually on screen — a per-file snapshot, advanced only once
+	// the new file's content has loaded. The previous slide (with its own
+	// blocks) stays up during the fetch, so the outgoing animation never
+	// shows the incoming file's text. Same-key updates (edits) re-render in
+	// place without re-triggering the transition.
+	let shown = $state<{ key: string; blocks: ReturnType<typeof renderBlocks> } | null>(null);
+	$effect(() => {
+		if (src !== null && loadedFile === file) shown = { key: file, blocks };
+	});
 	const idx = $derived(files.findIndex((f) => f.name === file));
 	const title = $derived(parsed?.meta.title ?? file.replace(/\.md$/, ''));
+
+	let loadedFile = $state('');
 
 	$effect(() => {
 		const p = project;
@@ -41,6 +57,7 @@
 			try {
 				const [content, list] = await Promise.all([api.readFile(p, f), api.files(p)]);
 				src = content.content;
+				loadedFile = f;
 				files = list.files;
 				error = null;
 				// Sync the rest of the project into the offline cache so the
@@ -129,11 +146,38 @@
 		window.getSelection()?.removeAllRanges();
 	};
 
+	// When set, the note bar edits this existing note block instead of
+	// inserting a new one.
+	let noteEditIdx = $state<number | null>(null);
+
+	const editNote = (idx: number) => {
+		if (parsed === null) return;
+		const block = blocks[idx];
+		if (!block) return;
+		noteText = getNoteText(parsed.body, block);
+		noteEditIdx = idx;
+		noteTarget = null;
+	};
+
 	const addNote = () => {
-		if (parsed === null || noteTarget === null) return;
+		if (parsed === null) return;
+		if (noteEditIdx !== null) {
+			const block = blocks[noteEditIdx];
+			if (block && noteText.trim()) persistBody(replaceNote(parsed.body, block, noteText));
+			noteEditIdx = null;
+			noteText = '';
+			return;
+		}
+		if (noteTarget === null) return;
 		const block = blocks[noteTarget.idx];
 		if (block && noteText.trim()) persistBody(insertNote(parsed.body, block, noteText));
 		noteTarget = null;
+		noteText = '';
+	};
+
+	const cancelNote = () => {
+		noteTarget = null;
+		noteEditIdx = null;
 		noteText = '';
 	};
 
@@ -184,9 +228,18 @@
 
 	// ---------- navigation (swipe + keys) ----------
 
+	// Slide direction for the page transition: +1 = forward (new page enters
+	// from the right), -1 = back. 0 on a direct load → no motion. Skipped
+	// entirely for prefers-reduced-motion users.
+	let navDir = $state(0);
+	const reducedMotion =
+		typeof window !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const slideMs = (dir: number) => (dir === 0 || reducedMotion ? 0 : 180);
+
 	const nav = async (delta: number) => {
 		const target = idx === -1 ? undefined : files[idx + delta];
 		if (!target) return;
+		navDir = delta;
 		await goto(resolve('/p/[project]/f/[file]', { project, file: target.name }));
 	};
 
@@ -314,15 +367,31 @@
 				</div>
 			{/if}
 			<textarea bind:value={draft} spellcheck="false"></textarea>
-		{:else if mode === 'demo'}
-			<MarkdownView {blocks} large />
-		{:else}
-			<MarkdownView
-				{blocks}
-				onArtifact={showArtifact}
-				onArtifactLeave={leaveArtifact}
-				onRemoveNote={removeNote}
-			/>
+		{:else if shown}
+			<!-- Keyed on the shown snapshot: the old page slides out one way,
+			     the new one in from the other, stacked in the same grid cell so
+			     the layout never jumps mid-flight. -->
+			<div class="slides">
+				{#key shown.key}
+					<div
+						class="slide"
+						in:fly={{ x: navDir * 48, duration: slideMs(navDir) }}
+						out:fly={{ x: -navDir * 48, duration: slideMs(navDir) }}
+					>
+						{#if mode === 'demo'}
+							<MarkdownView blocks={shown.blocks} large />
+						{:else}
+							<MarkdownView
+								blocks={shown.blocks}
+								onArtifact={showArtifact}
+								onArtifactLeave={leaveArtifact}
+								onEditNote={editNote}
+								onRemoveNote={removeNote}
+							/>
+						{/if}
+					</div>
+				{/key}
+			</div>
 		{/if}
 	</main>
 
@@ -361,7 +430,7 @@
 	</button>
 {/if}
 
-{#if noteTarget}
+{#if noteTarget || noteEditIdx !== null}
 	<div class="notebar">
 		<!-- the input *is* the requested action -->
 		<!-- svelte-ignore a11y_autofocus -->
@@ -371,11 +440,11 @@
 			bind:value={noteText}
 			onkeydown={(e) => {
 				if (e.key === 'Enter') addNote();
-				if (e.key === 'Escape') noteTarget = null;
+				if (e.key === 'Escape') cancelNote();
 			}}
 		/>
-		<button class="btn primary" onclick={addNote}>add</button>
-		<button class="btn" onclick={() => (noteTarget = null)}>cancel</button>
+		<button class="btn primary" onclick={addNote}>{noteEditIdx !== null ? 'save' : 'add'}</button>
+		<button class="btn" onclick={cancelNote}>cancel</button>
 	</div>
 {/if}
 
@@ -459,6 +528,15 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+		/* The exiting slide overshoots horizontally — don't grow the page. */
+		overflow-x: clip;
+	}
+	.slides {
+		display: grid;
+	}
+	.slide {
+		grid-area: 1 / 1;
+		min-width: 0;
 	}
 	.helpers {
 		display: flex;
@@ -479,6 +557,13 @@
 		border-radius: var(--halo-radius);
 		padding: 1rem;
 		resize: vertical;
+	}
+	/* Accent border is the focus indicator — drop the UA ring. */
+	textarea:focus-visible,
+	.notebar input:focus-visible {
+		outline: none;
+		border-color: var(--halo-accent);
+		box-shadow: 0 0 0 3px var(--halo-accent-soft);
 	}
 	.hint {
 		font-size: 0.8rem;

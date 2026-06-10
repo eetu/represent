@@ -370,7 +370,10 @@ pub async fn reorder(
     }
 }
 
-/// Zip the project's documents in demo order (scripts are kilobytes).
+/// Zip the project's documents in demo order (scripts are kilobytes). A
+/// `.order` entry (JSON array of names) carries the sequence, so a bundle
+/// re-imports — or moves to another instance — with its demo order intact
+/// (`import_legacy` reads the same format).
 pub async fn bundle(db: &Db, profile_id: i64, project: &str) -> AppResult<Vec<u8>> {
     check_project_name(project)?;
     let project = project.to_string();
@@ -395,6 +398,9 @@ pub async fn bundle(db: &Db, profile_id: i64, project: &str) -> AppResult<Vec<u8
         let mut zip = zip::ZipWriter::new(&mut buf);
         let opts = zip::write::SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated);
+        let order: Vec<&str> = contents.iter().map(|(n, _)| n.as_str()).collect();
+        zip.start_file(".order", opts)?;
+        zip.write_all(&serde_json::to_vec(&order)?)?;
         for (name, content) in contents {
             zip.start_file(name, opts)?;
             zip.write_all(content.as_bytes())?;
@@ -510,6 +516,12 @@ mod tests {
 
         let zip_bytes = bundle(&db, pid, "demo").await.unwrap();
         assert_eq!(&zip_bytes[..2], b"PK");
+        // The .order entry carries the demo sequence for round-tripping.
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(zip_bytes)).unwrap();
+        let mut order = String::new();
+        std::io::Read::read_to_string(&mut archive.by_name(".order").unwrap(), &mut order)
+            .unwrap();
+        assert_eq!(order, r#"["intro.md","next.md"]"#);
 
         delete_file(&db, pid, "demo", "intro.md").await.unwrap();
         assert!(matches!(

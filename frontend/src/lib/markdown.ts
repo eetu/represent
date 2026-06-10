@@ -172,6 +172,24 @@ export function removeBlock(body: string, block: Block): string {
 	return head.endsWith('\n') ? head + tail : `${head}\n\n${tail}`;
 }
 
+/** The editable text of a `> **note:** …` block (markers stripped). */
+export function getNoteText(body: string, block: Block): string {
+	return body
+		.slice(block.start, block.end)
+		.split(/\r?\n/)
+		.map((l) => l.replace(/^>\s?/, ''))
+		.join('\n')
+		.replace(/^\s*\*\*note:\*\*\s*/, '')
+		.trim();
+}
+
+/** Replace an existing note block with new text, keeping its position. */
+export function replaceNote(body: string, block: Block, text: string): string {
+	const head = body.slice(0, block.start);
+	const tail = body.slice(block.end).replace(/^\n+/, '');
+	return `${head}> **note:** ${text.trim()}\n\n${tail}`;
+}
+
 /** Insert a note blockquote right after the block the selection sits in. */
 export function insertNote(body: string, block: Block, text: string): string {
 	const head = body.slice(0, block.end);
