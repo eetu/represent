@@ -466,13 +466,23 @@
 		}
 	}
 	.viewer.demo {
-		padding-top: 0.75rem;
+		padding-top: 0;
 	}
 	.top,
 	.demobar {
 		display: flex;
 		align-items: center;
 		gap: 0.7rem;
+	}
+	/* The timer must survive scrolling a long file mid-demo. Opaque body
+	   background so content slides under it cleanly; safe-area padding for
+	   the installed (standalone) app. */
+	.demobar {
+		position: sticky;
+		top: 0;
+		z-index: 5;
+		background: var(--halo-body);
+		padding: calc(0.75rem + env(safe-area-inset-top)) 0 0.6rem;
 	}
 	.back {
 		text-decoration: none;
