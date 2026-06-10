@@ -8,6 +8,24 @@
 	let newName = $state('');
 	let creating = $state(false);
 	let me = $state<string | null>(null);
+	let menuOpen = $state(false);
+
+	// Dismiss the account menu on any tap outside it (or Escape).
+	$effect(() => {
+		if (!menuOpen) return;
+		const onDown = (e: PointerEvent) => {
+			if (!(e.target as Element).closest('.account')) menuOpen = false;
+		};
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') menuOpen = false;
+		};
+		document.addEventListener('pointerdown', onDown, true);
+		document.addEventListener('keydown', onKey);
+		return () => {
+			document.removeEventListener('pointerdown', onDown, true);
+			document.removeEventListener('keydown', onKey);
+		};
+	});
 
 	const load = async () => {
 		try {
@@ -59,8 +77,15 @@
 		<Wordmark />
 		{#if me}
 			<span class="account">
-				<span class="email">{me}</span>
-				<button class="ghost" title="log out" onclick={() => void api.logout()}>logout</button>
+				<button class="user" onclick={() => (menuOpen = !menuOpen)}>
+					<span class="email">{me}</span>
+					<span class="caret" class:open={menuOpen}>▾</span>
+				</button>
+				{#if menuOpen}
+					<div class="menu" role="menu">
+						<button role="menuitem" onclick={() => void api.logout()}>log out</button>
+					</div>
+				{/if}
 			</span>
 		{/if}
 	</header>
@@ -118,10 +143,22 @@
 	}
 	.account {
 		margin-left: auto;
+		position: relative;
+		min-width: 0;
+	}
+	.user {
 		display: inline-flex;
 		align-items: baseline;
-		gap: 0.5rem;
-		min-width: 0;
+		gap: 0.35rem;
+		max-width: 16rem;
+		background: none;
+		border: none;
+		padding: 0.3rem 0.2rem;
+		cursor: pointer;
+		border-radius: var(--halo-radius-pill);
+	}
+	.user:hover .email {
+		color: var(--halo-text-main);
 	}
 	.email {
 		color: var(--halo-text-muted);
@@ -129,6 +166,42 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.caret {
+		color: var(--halo-text-muted);
+		font-size: 0.65rem;
+		transition: transform var(--halo-d-fast);
+	}
+	.caret.open {
+		transform: rotate(180deg);
+	}
+	.menu {
+		position: absolute;
+		top: calc(100% + 0.25rem);
+		right: 0;
+		min-width: 9rem;
+		background: var(--halo-bg-main);
+		border: 1px solid var(--halo-border);
+		border-radius: var(--halo-radius);
+		box-shadow: var(--halo-shadow);
+		padding: 0.25rem;
+		z-index: 10;
+	}
+	.menu button {
+		width: 100%;
+		text-align: left;
+		font-family: var(--halo-font-heading);
+		font-size: 0.9rem;
+		color: var(--halo-text-main);
+		background: none;
+		border: none;
+		border-radius: var(--halo-radius-pill);
+		padding: 0.45rem 0.7rem;
+		cursor: pointer;
+	}
+	.menu button:hover {
+		background: var(--halo-accent-soft);
+		color: var(--halo-accent);
 	}
 	.muted {
 		color: var(--halo-text-muted);
