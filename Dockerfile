@@ -58,7 +58,7 @@ COPY --from=frontend-build /app/dist ./dist
 
 ENV STATIC_DIR=./dist
 ENV REPRESENT_BIND=0.0.0.0:3008
-ENV REPRESENT_DATA_DIR=/data
+ENV REPRESENT_DB_PATH=/data/represent.db
 
 USER 1000
 

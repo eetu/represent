@@ -13,8 +13,13 @@ import { netState } from './offline.svelte';
 export type StatusResponse = {
 	service: string;
 	version: string;
-	data_dir_healthy: boolean;
+	db_healthy: boolean;
 	project_count: number | null;
+	oidc_healthy: boolean | null;
+};
+
+export type Me = {
+	email: string;
 };
 
 export type ProjectInfo = {
@@ -53,6 +58,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 		...init
 	});
 	if (!res.ok) {
+		// No session (expired, or first visit on an OIDC deploy) → bounce
+		// through the login flow and come back to where we were.
+		if (res.status === 401 && path.startsWith('/api')) {
+			window.location.assign(`/auth/login?next=${encodeURIComponent(window.location.pathname)}`);
+		}
 		let detail = res.statusText;
 		try {
 			const body = await res.json();
@@ -148,6 +158,11 @@ const fileBase = (project: string, file: string) =>
 
 export const api = {
 	status: () => request<StatusResponse>('/status'),
+	me: () => request<Me>('/api/me'),
+	logout: async (): Promise<void> => {
+		await request<void>('/auth/logout', { method: 'POST' });
+		window.location.assign('/auth/login?next=/');
+	},
 	projects: () => cachedGet<{ projects: ProjectInfo[] }>('/api/projects'),
 	createProject: (name: string) =>
 		request<{ name: string }>('/api/projects', {

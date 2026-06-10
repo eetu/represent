@@ -1,6 +1,7 @@
 //! Integration harness: spawns the real `represent-backend` binary with
-//! `DEV_AUTH=1` against a temp data dir + stub dist/, polls `/status` until
-//! up, and exposes a `reqwest` client. The child is killed on `Drop`.
+//! `DEV_AUTH=1` against a temp SQLite db + stub dist/, polls `/status` until
+//! up, and exposes a cookie-keeping `reqwest` client (so `/auth/login` dev
+//! sessions stick). The child is killed on `Drop`.
 //!
 //! Tests are `#[ignore]` (they spawn a process + bind a port); run them with
 //! `cargo test -p represent-e2e -- --ignored`.
@@ -16,7 +17,7 @@ pub struct Stack {
     child: Child,
     pub base: String,
     pub client: reqwest::Client,
-    pub data_dir: PathBuf,
+    pub db_path: PathBuf,
     // Held so the temp dirs outlive the running binary.
     _data_tmp: TempDir,
     _static_tmp: TempDir,
@@ -25,7 +26,7 @@ pub struct Stack {
 impl Stack {
     pub async fn start() -> anyhow::Result<Self> {
         let data_tmp = tempfile::tempdir()?;
-        let data_dir = data_tmp.path().to_path_buf();
+        let db_path = data_tmp.path().join("represent.db");
 
         // Minimal static dir so the SPA fallback has something to serve.
         let static_tmp = tempfile::tempdir()?;
@@ -40,12 +41,13 @@ impl Stack {
         let child = Command::new(bin_path())
             .env("DEV_AUTH", "1")
             .env("REPRESENT_BIND", format!("127.0.0.1:{port}"))
-            .env("REPRESENT_DATA_DIR", &data_dir)
+            .env("REPRESENT_DB_PATH", &db_path)
             .env("STATIC_DIR", static_tmp.path())
             .env("RUST_LOG", "warn")
             .spawn()?;
 
         let client = reqwest::Client::builder()
+            .cookie_store(true)
             .timeout(Duration::from_secs(5))
             .build()?;
 
@@ -64,7 +66,7 @@ impl Stack {
             child,
             base,
             client,
-            data_dir,
+            db_path,
             _data_tmp: data_tmp,
             _static_tmp: static_tmp,
         };

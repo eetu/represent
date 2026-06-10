@@ -13,6 +13,12 @@ pub enum AppError {
     BadRequest(String),
     #[error("conflict: {0}")]
     Conflict(String),
+    /// The OIDC issuer (or another dependency) isn't reachable — retryable.
+    #[error("service unavailable: {0}")]
+    ServiceUnavailable(String),
+    /// The OIDC issuer answered with something unusable.
+    #[error("upstream: {0}")]
+    Upstream(String),
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -24,6 +30,8 @@ impl AppError {
             AppError::NotFound => StatusCode::NOT_FOUND,
             AppError::BadRequest(_) => StatusCode::BAD_REQUEST,
             AppError::Conflict(_) => StatusCode::CONFLICT,
+            AppError::ServiceUnavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
+            AppError::Upstream(_) => StatusCode::BAD_GATEWAY,
             AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -52,4 +60,23 @@ impl From<std::io::Error> for AppError {
             _ => AppError::Internal(e.into()),
         }
     }
+}
+
+impl From<rusqlite::Error> for AppError {
+    fn from(e: rusqlite::Error) -> Self {
+        match e {
+            rusqlite::Error::QueryReturnedNoRows => AppError::NotFound,
+            _ => AppError::Internal(e.into()),
+        }
+    }
+}
+
+/// SQLite UNIQUE-constraint check, for call sites that want a 409 instead of
+/// a 500 (duplicate project name, rename target exists).
+pub fn is_unique_violation(e: &rusqlite::Error) -> bool {
+    matches!(
+        e,
+        rusqlite::Error::SqliteFailure(f, _)
+            if f.code == rusqlite::ffi::ErrorCode::ConstraintViolation
+    )
 }

@@ -8,15 +8,19 @@ a note straight into the script. Sibling in the homebrew family.
 
 A single Rust (axum) binary that embeds a SvelteKit SPA, ships as one arm64
 container to `ghcr.io/eetu/represent`, and is deployed onto the Pi by
-[`../raspi`](../raspi) behind Traefik + oauth2-proxy. No database — projects
-are directories of markdown files on a backed-up bind mount.
+[`../raspi`](../raspi). Multi-user: identities come from an own OIDC login
+(kanidm), oauth2-proxy forward-auth headers, or `DEV_AUTH` — each resolves to
+a profile that owns its projects. All durable state is **one SQLite file**
+(projects + documents as rows), so backup and moving the installation is
+copying one file.
 
 ## How it works
 
-- **Projects** are directories; **files** are plain `.md` with whatever names
-  they arrived with. The running order is separate metadata (a `.order`
-  sidecar per project) — drag rows in the project view to set it. Files not
-  yet ordered (fresh uploads) follow alphabetically at the end.
+- **Projects** own **documents** — plain markdown rows in SQLite, keeping
+  whatever names they arrived with. The running order is a `position`
+  column — drag rows in the project view to set it; fresh uploads land at
+  the end. A legacy flat-file data dir imports once at boot via
+  `REPRESENT_IMPORT_DIR` + `REPRESENT_IMPORT_EMAIL`.
 - **Demo mode**: chrome collapses to a timer bar + position; swipe left/right
   (or ←/→) between files; the screen stays awake (wake lock). The timer comes
   from the file's own frontmatter and never auto-advances:
@@ -49,11 +53,11 @@ are directories of markdown files on a backed-up bind mount.
 ## Layout
 
 ```
-backend/    Rust axum service — flat-file store, name allowlist, forward-auth
-            gate, CSP, zip bundles, SPA serving. No DB.
+backend/    Rust axum service — SQLite store (profiles/projects/documents),
+            OIDC + session auth, name allowlist, CSP, zip bundles, SPA serving.
 frontend/   SvelteKit SPA (adapter-static, runes), marked + DOMPurify,
             halo-design tokens.
-e2e/        Spawned-binary integration harness (temp data dir, real HTTP).
+e2e/        Spawned-binary integration harness (temp SQLite, real HTTP).
 Dockerfile  Multi-stage xx cross-compile → scratch.
 ```
 
@@ -61,14 +65,19 @@ Dockerfile  Multi-stage xx cross-compile → scratch.
 
 | Route | Auth | Purpose |
 |---|---|---|
-| `GET /status` | none | Liveness: `{service, version, data_dir_healthy, project_count}` |
-| `GET/POST /api/projects` | forward-auth | List / create projects |
-| `DELETE /api/projects/{p}` | forward-auth | Delete a project |
-| `GET /api/projects/{p}/files` | forward-auth | List files (demo order) |
-| `GET/PUT/DELETE /api/projects/{p}/files/{f}` | forward-auth | Read / upsert / delete one file |
-| `POST /api/projects/{p}/files/{f}/rename` | forward-auth | Rename a file (keeps its order slot) |
-| `POST /api/projects/{p}/reorder` | forward-auth | Persist a new demo order (names untouched) |
-| `GET /api/projects/{p}/bundle` | forward-auth | Zip download of the project |
+| `GET /status` | none | Liveness: `{service, version, db_healthy, project_count, oidc_healthy}` |
+| `GET /auth/login`, `/auth/callback`, `POST /auth/logout` | none | OIDC (or DEV_AUTH) session flow |
+| `GET /api/me` | session | `{email}` of the logged-in profile |
+| `GET/POST /api/projects` | session | List / create the profile's projects |
+| `DELETE /api/projects/{p}` | session | Delete a project |
+| `GET /api/projects/{p}/files` | session | List files (demo order) |
+| `GET/PUT/DELETE /api/projects/{p}/files/{f}` | session | Read / upsert / delete one file |
+| `POST /api/projects/{p}/files/{f}/rename` | session | Rename a file (keeps its order slot) |
+| `POST /api/projects/{p}/reorder` | session | Persist a new demo order (names untouched) |
+| `GET /api/projects/{p}/bundle` | session | Zip download of the project |
+
+"session" = any of: signed OIDC session cookie, oauth2-proxy forward-auth
+headers, or the DEV_AUTH synthetic identity.
 
 ## Development
 

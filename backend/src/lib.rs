@@ -1,6 +1,8 @@
 pub mod auth;
 pub mod config;
+pub mod db;
 pub mod error;
+pub mod oidc;
 pub mod routes;
 pub mod state;
 pub mod store;
@@ -81,15 +83,24 @@ pub async fn run_server() -> anyhow::Result<()> {
 
     let cfg = Config::from_env()?;
     if cfg.dev_auth {
-        tracing::warn!("DEV_AUTH=1 — forward-auth gate bypassed; do not use in prod");
+        tracing::warn!("DEV_AUTH=1 — auth gate bypassed; do not use in prod");
     }
 
-    // The store is the only durable state; refuse to boot without a writable
-    // data dir rather than serve an app that loses every edit.
-    std::fs::create_dir_all(&cfg.data_dir)
-        .map_err(|e| anyhow::anyhow!("data dir {} unusable: {e}", cfg.data_dir.display()))?;
+    // All durable state is the SQLite file; refuse to boot without it.
+    let db = db::Db::open(&cfg.db_path)
+        .map_err(|e| anyhow::anyhow!("db {} unusable: {e}", cfg.db_path.display()))?;
 
-    let state = AppState::new(cfg);
+    // One-shot import of a legacy flat-file data dir (existing projects are
+    // skipped, so leaving this configured is harmless).
+    if let (Some(dir), Some(email)) = (&cfg.import_dir, &cfg.import_email) {
+        match store::import_legacy(&db, dir, email).await {
+            Ok(n) if n > 0 => tracing::info!(count = n, dir = %dir.display(), "imported legacy projects"),
+            Ok(_) => {}
+            Err(e) => tracing::warn!(dir = %dir.display(), error = %e, "legacy import failed; continuing"),
+        }
+    }
+
+    let state = AppState::new(cfg, db);
     let bind = state.cfg.bind.clone();
 
     // Hash the SPA's inline bootstrap script(s) so the CSP can allow exactly

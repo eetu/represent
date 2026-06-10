@@ -7,6 +7,7 @@
 	let error = $state<string | null>(null);
 	let newName = $state('');
 	let creating = $state(false);
+	let me = $state<string | null>(null);
 
 	const load = async () => {
 		try {
@@ -19,6 +20,10 @@
 
 	$effect(() => {
 		void load();
+		void api.me().then(
+			(m) => (me = m.email),
+			() => (me = null)
+		);
 	});
 
 	const create = async () => {
@@ -52,6 +57,12 @@
 <div class="shell">
 	<header class="top">
 		<Wordmark />
+		{#if me}
+			<span class="account">
+				<span class="email">{me}</span>
+				<button class="ghost" title="log out" onclick={() => void api.logout()}>logout</button>
+			</span>
+		{/if}
 	</header>
 
 	{#if error}
@@ -104,6 +115,20 @@
 		align-items: baseline;
 		gap: 1rem;
 		flex-wrap: wrap;
+	}
+	.account {
+		margin-left: auto;
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+	.email {
+		color: var(--halo-text-muted);
+		font-size: 0.8rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.muted {
 		color: var(--halo-text-muted);

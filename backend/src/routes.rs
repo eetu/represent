@@ -1,12 +1,12 @@
 use axum::extract::{Path, State};
 use axum::http::{header, StatusCode};
 use axum::response::IntoResponse;
-use axum::routing::{get, put};
+use axum::routing::{get, post, put};
 use axum::{Json, Router};
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::auth::AuthUser;
+use crate::auth::{self, AuthUser};
 use crate::error::AppResult;
 use crate::state::AppState;
 use crate::store;
@@ -16,7 +16,13 @@ pub fn router(state: AppState) -> Router {
         // Unauthenticated liveness — gatus probes this; keep it auth-free and on
         // a Traefik monitor router that bypasses oauth2-proxy.
         .route("/status", get(status))
-        // Everything below requires the forward-auth headers (AuthUser).
+        // Own login (OIDC / DEV_AUTH). Behind oauth2-proxy these are unused —
+        // the forward-auth headers carry the identity instead.
+        .route("/auth/login", get(auth::login))
+        .route("/auth/callback", get(auth::callback))
+        .route("/auth/logout", post(auth::logout))
+        // Everything below requires an authenticated profile (AuthUser).
+        .route("/api/me", get(auth::me))
         .route("/api/projects", get(api_projects).post(api_create_project))
         .route("/api/projects/{project}", axum::routing::delete(api_delete_project))
         .route("/api/projects/{project}/files", get(api_files))
@@ -26,9 +32,9 @@ pub fn router(state: AppState) -> Router {
         )
         .route(
             "/api/projects/{project}/files/{file}/rename",
-            axum::routing::post(api_rename_file),
+            post(api_rename_file),
         )
-        .route("/api/projects/{project}/reorder", axum::routing::post(api_reorder))
+        .route("/api/projects/{project}/reorder", post(api_reorder))
         .route("/api/projects/{project}/bundle", get(api_bundle))
         // SPA: serve a built asset if the path maps to a real file under
         // static_dir, otherwise return index.html with 200 so the client router
@@ -71,12 +77,24 @@ async fn serve_spa(State(state): State<AppState>, uri: axum::http::Uri) -> axum:
 // ---------- public probe ----------
 
 async fn status(State(state): State<AppState>) -> Json<Value> {
-    let projects = store::list_projects(&state.cfg.data_dir).await.ok();
+    let project_count: Option<i64> = state
+        .db
+        .with(|c| c.query_row("SELECT COUNT(*) FROM projects", [], |r| r.get(0)))
+        .await
+        .ok();
+    // OIDC reachability piggybacks on the probe — this is also the lazy
+    // re-discovery driver when the issuer boots after us.
+    let oidc_healthy = if state.oidc.is_configured() {
+        Some(state.oidc.ctx().await.is_some())
+    } else {
+        None
+    };
     Json(json!({
         "service": "represent",
         "version": env!("CARGO_PKG_VERSION"),
-        "data_dir_healthy": projects.is_some(),
-        "project_count": projects.map(|p| p.len()),
+        "db_healthy": project_count.is_some(),
+        "project_count": project_count,
+        "oidc_healthy": oidc_healthy,
     }))
 }
 
@@ -102,97 +120,96 @@ struct Rename {
     to: String,
 }
 
-async fn api_projects(_user: AuthUser, State(state): State<AppState>) -> AppResult<Json<Value>> {
-    let projects = store::list_projects(&state.cfg.data_dir).await?;
+async fn api_projects(user: AuthUser, State(state): State<AppState>) -> AppResult<Json<Value>> {
+    let projects = store::list_projects(&state.db, user.profile_id).await?;
     Ok(Json(json!({ "projects": projects })))
 }
 
 async fn api_create_project(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Json(req): Json<CreateProject>,
 ) -> AppResult<(StatusCode, Json<Value>)> {
-    store::create_project(&state.cfg.data_dir, &req.name).await?;
+    store::create_project(&state.db, user.profile_id, &req.name).await?;
     Ok((StatusCode::CREATED, Json(json!({ "name": req.name }))))
 }
 
 async fn api_delete_project(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path(project): Path<String>,
 ) -> AppResult<StatusCode> {
-    store::delete_project(&state.cfg.data_dir, &project).await?;
+    store::delete_project(&state.db, user.profile_id, &project).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 async fn api_files(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path(project): Path<String>,
 ) -> AppResult<Json<Value>> {
-    let files = store::list_files(&state.cfg.data_dir, &project).await?;
+    let files = store::list_files(&state.db, user.profile_id, &project).await?;
     Ok(Json(json!({ "files": files })))
 }
 
 async fn api_read_file(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path((project, file)): Path<(String, String)>,
 ) -> AppResult<Json<Value>> {
-    let content = store::read_file(&state.cfg.data_dir, &project, &file).await?;
+    let content = store::read_file(&state.db, user.profile_id, &project, &file).await?;
     Ok(Json(json!({ "name": file, "content": content })))
 }
 
 async fn api_save_file(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path((project, file)): Path<(String, String)>,
     Json(req): Json<SaveFile>,
 ) -> AppResult<StatusCode> {
-    store::write_file(&state.cfg.data_dir, &project, &file, &req.content).await?;
+    store::write_file(&state.db, user.profile_id, &project, &file, &req.content).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 async fn api_delete_file(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path((project, file)): Path<(String, String)>,
 ) -> AppResult<StatusCode> {
-    store::delete_file(&state.cfg.data_dir, &project, &file).await?;
+    store::delete_file(&state.db, user.profile_id, &project, &file).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 /// Rename one file (keeps its demo-order slot; 409 if the target exists).
 async fn api_rename_file(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path((project, file)): Path<(String, String)>,
     Json(req): Json<Rename>,
 ) -> AppResult<StatusCode> {
-    store::rename_file(&state.cfg.data_dir, &project, &file, &req.to).await?;
+    store::rename_file(&state.db, user.profile_id, &project, &file, &req.to).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
 /// Persist a new demo order: the body lists every file in its new sequence.
-/// File names are untouched — the order is metadata (a `.order` sidecar).
 async fn api_reorder(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path(project): Path<String>,
     Json(req): Json<Reorder>,
 ) -> AppResult<Json<Value>> {
-    let files = store::reorder(&state.cfg.data_dir, &project, &req.files).await?;
+    let files = store::reorder(&state.db, user.profile_id, &project, &req.files).await?;
     Ok(Json(json!({ "files": files })))
 }
 
 /// Download the whole project as a zip — the "bundle" the scripts were copied
 /// in from, carried back out with the JIT edits applied.
 async fn api_bundle(
-    _user: AuthUser,
+    user: AuthUser,
     State(state): State<AppState>,
     Path(project): Path<String>,
 ) -> AppResult<impl IntoResponse> {
-    let bytes = store::bundle(&state.cfg.data_dir, &project).await?;
+    let bytes = store::bundle(&state.db, user.profile_id, &project).await?;
     Ok((
         [
             (header::CONTENT_TYPE, "application/zip".to_string()),

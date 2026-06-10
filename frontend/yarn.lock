@@ -5,6 +5,31 @@ __metadata:
   version: 10
   cacheKey: 10
 
+"@anarkisti/eslint-config@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@anarkisti/eslint-config@npm:1.0.0"
+  dependencies:
+    "@eslint-react/eslint-plugin": "npm:^5.8.11"
+    "@eslint/js": "npm:^10.0.1"
+    eslint-config-prettier: "npm:^10.1.8"
+    eslint-plugin-react-refresh: "npm:^0.5.2"
+    eslint-plugin-simple-import-sort: "npm:^13.0.0"
+    eslint-plugin-svelte: "npm:^3.12.4"
+    eslint-plugin-unused-imports: "npm:^4.4.1"
+    globals: "npm:^17.6.0"
+    typescript-eslint: "npm:^8.60.1"
+  peerDependencies:
+    eslint: ">= 9"
+    svelte: ">= 5"
+  peerDependenciesMeta:
+    svelte:
+      optional: true
+    typescript:
+      optional: true
+  checksum: 10/d07a6b32a504d25d3cb856b80bb839f34b0ec223c74aaa9aad07ffaad52941ca407452b11c44554164d1ff8bae7afeb4ef3431aab02434e8789d145409a62dbc
+  languageName: node
+  linkType: hard
+
 "@emnapi/core@npm:1.10.0":
   version: 1.10.0
   resolution: "@emnapi/core@npm:1.10.0"
@@ -86,7 +111,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint-react/eslint-plugin@npm:^5.8.6":
+"@eslint-react/eslint-plugin@npm:^5.8.11":
   version: 5.8.17
   resolution: "@eslint-react/eslint-plugin@npm:5.8.17"
   dependencies:
@@ -936,31 +961,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config@github:eetu/eslint-config#v2.1.0":
-  version: 2.1.0
-  resolution: "eslint-config@https://github.com/eetu/eslint-config.git#commit=ff540d1b45f041497bde9f171d7a549153c56322"
-  dependencies:
-    "@eslint-react/eslint-plugin": "npm:^5.8.6"
-    "@eslint/js": "npm:^10.0.1"
-    eslint-config-prettier: "npm:^10.1.8"
-    eslint-plugin-react-refresh: "npm:^0.5.2"
-    eslint-plugin-simple-import-sort: "npm:^13.0.0"
-    eslint-plugin-svelte: "npm:^3.12.4"
-    eslint-plugin-unused-imports: "npm:^4.4.1"
-    globals: "npm:^16.5.0"
-    typescript-eslint: "npm:^8.60.0"
-  peerDependencies:
-    eslint: ">= 9"
-    svelte: ">= 5"
-  peerDependenciesMeta:
-    svelte:
-      optional: true
-    typescript:
-      optional: true
-  checksum: 10/79777a4082417427ed48bf5a48e922ed0866882fbd11f8cee0eecb881a12fc94e4bdad7a0b4a8ddab6819dc4c700e884dbc7de3f0ab350ca22e9f5ff7476b71f
-  languageName: node
-  linkType: hard
-
 "eslint-plugin-react-dom@npm:5.8.17":
   version: 5.8.17
   resolution: "eslint-plugin-react-dom@npm:5.8.17"
@@ -1401,10 +1401,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"globals@npm:^16.0.0, globals@npm:^16.5.0":
+"globals@npm:^16.0.0":
   version: 16.5.0
   resolution: "globals@npm:16.5.0"
   checksum: 10/f9e8a2a13f50222c127030a619e283e7bbfe32966316bdde0715af1d15a7e40cb9c24ff52cad59671f97762ed8b515353c2f8674f560c63d9385f19ee26735a6
+  languageName: node
+  linkType: hard
+
+"globals@npm:^17.6.0":
+  version: 17.6.0
+  resolution: "globals@npm:17.6.0"
+  checksum: 10/2bf0febf31c942edee6f4eca7e939a9c885f8ecfb767048b1c4dd2a32008d0ab136e6076665d76b44b29c2571bbbc1681371caab05fd8ee0067c7618e841b89d
   languageName: node
   linkType: hard
 
@@ -1958,13 +1965,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "represent-frontend@workspace:."
   dependencies:
+    "@anarkisti/eslint-config": "npm:^1.0.0"
     "@sveltejs/adapter-static": "npm:^3.0.10"
     "@sveltejs/kit": "npm:^2.57.0"
     "@sveltejs/vite-plugin-svelte": "npm:^7.0.0"
     "@types/node": "npm:^25"
     dompurify: "npm:^3.3.1"
     eslint: "npm:^10.4.0"
-    eslint-config: "github:eetu/eslint-config#v2.1.0"
     marked: "npm:^17.0.1"
     prettier: "npm:^3.8.3"
     prettier-plugin-svelte: "npm:^4.0.1"
@@ -2224,7 +2231,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-eslint@npm:^8.60.0":
+"typescript-eslint@npm:^8.60.1":
   version: 8.61.0
   resolution: "typescript-eslint@npm:8.61.0"
   dependencies:

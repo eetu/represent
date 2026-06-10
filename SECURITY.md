@@ -1,25 +1,31 @@
 # Security model — represent
 
-A LAN-only markdown viewer/editor for demo scripts. Durable state is a
-directory of plain `.md` files (`REPRESENT_DATA_DIR`, one subdirectory per
-project) on a restic-backed bind mount. It holds **no auth secret of its own**
-and talks to **no upstream services**.
+A LAN-only, multi-user markdown viewer/editor for demo scripts. Durable state
+is **one SQLite file** (`REPRESENT_DB_PATH`: profiles, projects, documents)
+on a restic-backed bind mount. The only upstream it ever talks to is the
+optional OIDC issuer.
 
-## Trust boundaries
+## Trust boundaries & identity
 
-- **Edge auth is oauth2-proxy, not this app.** On the Pi the host is a Traefik
-  *gated host* (`_gated_hosts` in `../raspi/tasks/traefik.py`): every request
-  is forced through oauth2-proxy → Kanidm before it reaches the backend. The
-  backend trusts the injected `X-Auth-Request-User` / `X-Auth-Request-Email`
-  headers and **requires them on every `/api/*` route** (401 if absent) as
-  defense-in-depth against a request that bypassed the proxy on the loopback
-  port. These headers are PII and are **never logged**.
-- **No own login / session / cookie / Kanidm client.** There is no
-  `SESSION_KEY`, no signed cookie, no OIDC flow in the binary. Removing that
-  surface is the point of sitting behind the forward-auth edge.
-- **`DEV_AUTH=1`** bypasses the header gate with a synthetic user for local
-  dev. It is never set in production (the binary logs a warning at boot when
-  it is).
+Three credential paths, in extractor precedence (`backend/src/auth.rs`):
+
+1. **Own OIDC session** (when `OIDC_*` is configured): authorization-code +
+   PKCE against Kanidm, ported from scribe/chat. The browser never sees
+   provider tokens — after ID-token validation only `sub|email` goes into the
+   signed `represent_session` cookie (`SESSION_KEY` ≥64 bytes hex; prod
+   refuses to boot without it; `http_only`, `SameSite=Lax`, `Secure` in
+   prod). Handshake values (csrf/nonce/PKCE/next) round-trip in a separate
+   10-minute signed cookie, deleted on first use; `next` is sanitized
+   against open redirects (`/…` only, no `//host`).
+2. **oauth2-proxy forward-auth headers** (`X-Auth-Request-User`/`-Email`) —
+   the gated-host deploy mode; the app then needs no own login. Headers are
+   PII and **never logged**.
+3. **`DEV_AUTH=1`**: synthetic dev identity + `?username=` dev sessions for
+   multi-user testing. Never set in production (boot warning).
+
+Every identity resolves to a `profile` row and **all project/document queries
+are keyed by profile id** — users cannot see or touch each other's data
+(tested in `store::tests::profiles_are_isolated` + e2e).
 
 ## Unauthenticated surface
 
@@ -28,23 +34,19 @@ and talks to **no upstream services**.
   projects) so gatus can probe liveness. It is served on a Traefik monitor
   router that bypasses oauth2-proxy; everything else on the host stays gated.
 
-## The filesystem is the attack surface
+## Input surface
 
-Every project/file name crosses the URL → filesystem boundary, so:
-
-- **Allowlist validation before any path is built** (`backend/src/store.rs`):
-  ASCII alphanumerics plus `. _ - space`, and any non-ASCII non-control
-  character (ö/ä/å are valid names; everything path-dangerous — `/`, `\`,
-  NUL, `..` — is ASCII and stays excluded). ≤128 bytes, no leading dot/space,
-  no trailing dot/space. Separators and traversal never reach `Path::join`.
-  Files must additionally end in `.md` — the store cannot be used to park
-  arbitrary file types. Non-ASCII project names reach the bundle
-  `Content-Disposition` only RFC 5987-encoded (`filename*`), never raw.
-- **Writes never create structure implicitly**: PUT to a missing project is a
-  404, not a `mkdir`.
-- **Bundle download** zips only the validated `.md` files of one validated
-  project; the `Content-Disposition` filename is the already-allowlisted
-  project name.
+- **All SQL is parameterized** (`rusqlite params!`); the store never
+  interpolates user input into a query.
+- **Name allowlist still applies** (`backend/src/store.rs`) even though
+  names no longer touch the filesystem — they end up in zip entry names,
+  `Content-Disposition` headers and URLs: ASCII alphanumerics plus
+  `. _ - space`, and any non-ASCII non-control character (ö/ä/å valid;
+  everything header/path-dangerous is ASCII and excluded). ≤128 bytes, no
+  leading dot/space, no trailing dot/space. Files must end in `.md`. Writes
+  to a missing project are 404, never implicit creation. Non-ASCII project
+  names reach the bundle `Content-Disposition` only RFC 5987-encoded
+  (`filename*`), never raw.
 - **Static file serving** resolves the requested path and rejects anything
   that escapes `STATIC_DIR` after canonicalisation (path-traversal guard);
   unmatched routes return the SPA shell, never an arbitrary file.
@@ -63,10 +65,14 @@ Every project/file name crosses the URL → filesystem boundary, so:
 ## Hardening
 
 - **Container**: non-root user, `scratch` base (no shell/userland), LAN-only
-  (`../raspi/tasks/network_restrict.py`), small `MemoryMax`. The data dir is
-  the only writable mount.
-- **Fail closed**: the binary refuses to boot if the data dir can't be
-  created/used.
+  (`../raspi/tasks/network_restrict.py`), small `MemoryMax`. The `/data`
+  mount (one SQLite file) is the only writable path.
+- **Fail closed**: the binary refuses to boot if the DB can't be opened, or
+  if `SESSION_KEY` is missing/weak while `DEV_AUTH` is off.
+- **OIDC HTTP client** disables redirects (SSRF guard per openidconnect-rs
+  guidance) and uses short timeouts; discovery is lazy with single-flight
+  retry, so a down issuer degrades login to a retryable 503, never a boot
+  loop.
 
 ## Reporting
 

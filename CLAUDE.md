@@ -9,27 +9,32 @@ strike / note) minutes before the talk. Sibling in eetu's homebrew family
 ## Layout
 
 ```
-backend/         Rust axum 0.8 — flat-file project store (no DB), forward-auth
-                 gate, CSP, zip bundles, serves the SPA
+backend/         Rust axum 0.8 — SQLite store (profiles/projects/documents),
+                 OIDC + session auth, CSP, zip bundles, serves the SPA
 frontend/        Svelte 5 + SvelteKit (adapter-static), marked + DOMPurify
-e2e/             spawned-binary integration tests (temp data dir, real HTTP)
+e2e/             spawned-binary integration tests (temp SQLite, real HTTP)
 .claude/skills/  represent-design skill (glyph, wordmark, voice)
 Dockerfile       multi-stage: node build + Rust cross-compile (arm64) → scratch
-SECURITY.md      forward-auth trust model, name allowlist, sanitize/CSP notes
+SECURITY.md      auth trust model, name allowlist, sanitize/CSP notes
 ```
 
 Cargo workspace = `backend` + `e2e`.
 
 ## Conventions
 
-- **Auth at the edge.** Behind oauth2-proxy (Traefik forward-auth). `/status`
-  is unauthenticated (gatus liveness); all `/api/*` require
-  `X-Auth-Request-User`/`-Email`. `DEV_AUTH=1` bypasses on localhost.
-- **The filesystem is the database.** `REPRESENT_DATA_DIR/<project>/<file>.md`.
-  Names pass a strict allowlist (`store::valid_name`) before any path is
-  built; files must end `.md`. Demo order is metadata, not naming: a hidden
-  `.order` JSON sidecar per project (`store::reorder`); unlisted files sort
-  alphabetically after the ordered ones. Names are never rewritten.
+- **Multi-user, three credential paths** (`auth::AuthUser`, in precedence
+  order): own OIDC session cookie (`/auth/login` → kanidm, scribe-ported
+  `oidc.rs`), oauth2-proxy forward-auth headers, `DEV_AUTH=1` synthetic dev
+  identity (`/auth/login?username=alice` mints arbitrary dev sessions).
+  Every identity resolves to a `profile` row (sub → email backfill →
+  create); all queries key off `profile_id`. `/status` stays unauth.
+- **SQLite is the database** (`REPRESENT_DB_PATH`, one file to back up/move):
+  `profile → projects → documents` with content TEXT + `position` for demo
+  order (fresh uploads get max+1). House Db wrapper: one
+  `Arc<Mutex<Connection>>`, WAL, idempotent boot migrations. Names still
+  pass the allowlist (`store::valid_name`) — they reach headers/zip entries.
+  `REPRESENT_IMPORT_DIR`+`_EMAIL` one-shot-import the legacy flat-file
+  layout at boot (existing projects skipped).
 - **Markdown semantics live in the frontend** (`src/lib/markdown.ts`): the
   backend stores opaque text. Frontmatter is a minimal `key: value` fence —
   `timer: 90` or `timer: 1:30` (demo countdown), `title:`. `==text==` renders
@@ -53,15 +58,16 @@ Cargo workspace = `backend` + `e2e`.
 
 - Backend `:3008` (`REPRESENT_BIND`): `cd backend && cp .env.example .env`
   once, then `bacon` (default job runs + restarts on src/.env change) or
-  `cargo run`. The .env sets `DEV_AUTH=1` + `REPRESENT_DATA_DIR=../data`
+  `cargo run`. The .env sets `DEV_AUTH=1` + `REPRESENT_DB_PATH=../represent.db`
   (gitignored).
 - Frontend dev `:5173`: `cd frontend && yarn install && yarn dev`; Vite
   proxies `/api` + `/status` to `:3008`. `yarn validate` = typecheck + lint +
   format.
 - e2e: `cargo test -p represent-e2e -- --ignored` (builds the binary first:
   `cargo build -p represent-backend`).
-- Key env: `REPRESENT_BIND`, `REPRESENT_DATA_DIR`, `STATIC_DIR`, `DEV_AUTH`.
-  See `backend/src/config.rs`.
+- Key env: `REPRESENT_BIND`, `REPRESENT_DB_PATH`, `STATIC_DIR`, `DEV_AUTH`,
+  `SESSION_KEY`, `OIDC_*`, `REPRESENT_IMPORT_DIR`/`_EMAIL`. See
+  `backend/src/config.rs`.
 - Hooks: `./install-hooks.sh` once after clone.
 
 ## Roadmap (v2 — don't build prematurely)
@@ -69,5 +75,5 @@ Cargo workspace = `backend` + `e2e`.
 - Desktop WYSIWYG edit mode (the current `source` textarea is the v1 stopgap).
 - File rename/reorder UI.
 
-Out of scope: own auth, multi-user/per-user state, non-markdown file types.
+Out of scope: non-markdown file types, sharing projects between profiles.
 If a feature crosses into those, raise it before implementing.

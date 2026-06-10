@@ -12,8 +12,38 @@ async fn status_is_unauthenticated_and_reports_store() {
     assert!(r.status().is_success());
     let body: serde_json::Value = r.json().await.unwrap();
     assert_eq!(body["service"], "represent");
-    assert_eq!(body["data_dir_healthy"], true);
+    assert_eq!(body["db_healthy"], true);
     assert_eq!(body["project_count"], 0);
+    // No OIDC configured in the harness.
+    assert!(body["oidc_healthy"].is_null());
+}
+
+#[tokio::test]
+#[ignore]
+async fn dev_login_isolates_users() {
+    let s = Stack::start().await.unwrap();
+
+    // Alice logs in (dev session cookie) and creates a project.
+    let r = s.get("/auth/login?username=alice&next=/").await;
+    assert!(r.status().is_success()); // followed the redirect to the SPA shell
+    s.post_json("/api/projects", json!({ "name": "alices" })).await;
+    let body: serde_json::Value = s.get("/api/me").await.json().await.unwrap();
+    assert_eq!(body["email"], "alice@local");
+
+    // Bob logs in on the same client — the cookie swaps, Alice's data is gone.
+    s.get("/auth/login?username=bob&next=/").await;
+    let body: serde_json::Value = s.get("/api/projects").await.json().await.unwrap();
+    assert_eq!(body["projects"].as_array().unwrap().len(), 0);
+    // Same name in Bob's namespace is fine.
+    let r = s.post_json("/api/projects", json!({ "name": "alices" })).await;
+    assert_eq!(r.status(), reqwest::StatusCode::CREATED);
+
+    // Logout drops the session; DEV_AUTH then falls back to the synthetic
+    // dev profile (still authenticated — bypass is the point of dev mode).
+    let r = s.post_json("/auth/logout", json!({})).await;
+    assert_eq!(r.status(), reqwest::StatusCode::NO_CONTENT);
+    let body: serde_json::Value = s.get("/api/me").await.json().await.unwrap();
+    assert_eq!(body["email"], "dev@localhost");
 }
 
 #[tokio::test]
