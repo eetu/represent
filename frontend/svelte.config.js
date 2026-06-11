@@ -7,6 +7,13 @@ const config = {
 		runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
 	},
 	kit: {
+		// SvelteKit would otherwise auto-register the service worker in dev too —
+		// a dev SW on localhost:5173 outlives the dev server and hijacks every
+		// other app later served on the same port (it's scoped to the origin).
+		// Registered manually, prod-only, in +layout.svelte.
+		serviceWorker: {
+			register: false
+		},
 		// Pure SPA: no server-side logic (no +*.server.ts / +server.ts). The Rust
 		// backend embeds this and serves the fallback for every unmatched path, so
 		// client-side routing + a hard refresh both work. Output to dist/ to match
