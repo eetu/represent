@@ -933,11 +933,11 @@ __metadata:
   linkType: hard
 
 "@types/node@npm:^25":
-  version: 25.9.2
-  resolution: "@types/node@npm:25.9.2"
+  version: 25.9.3
+  resolution: "@types/node@npm:25.9.3"
   dependencies:
     undici-types: "npm:>=7.24.0 <7.24.7"
-  checksum: 10/4ec76a3c9d51866cea5c6a5b17d52a2113b387e7fa812303bf20cc2949ff5e2b2bafcdef693c21ff8235d370ec2807961dc1075eb6bbea661916a5bbd84b6511
+  checksum: 10/40c5f5c91450689b255dbf8cbd6cf0bb05e1013a353830b15eb9b5c9cda6448510be572d1ecadc38c8a4ac472e61381de9ae28df82094abece59f4c1eccffbc5
   languageName: node
   linkType: hard
 
@@ -1718,6 +1718,18 @@ __metadata:
     "@types/trusted-types":
       optional: true
   checksum: 10/d661322889a8938bfb99ee27853e9e78661949398e803f344865fd94f8378a494efadd329faea0b16e8085efae1bfeed5f5df372909c3a2be3e583686a0a48fa
+  languageName: node
+  linkType: hard
+
+"dompurify@npm:^3.4.10":
+  version: 3.4.10
+  resolution: "dompurify@npm:3.4.10"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.7"
+  dependenciesMeta:
+    "@types/trusted-types":
+      optional: true
+  checksum: 10/e051c70e7a0729d8cc04d40d7863dc8977495140857e81dc668fb548b7a43c7f80cfc973e3c9c0a6cd18b8eaa94ea7de9603daa02d38c8b15a9b32cc25a6f440
   languageName: node
   linkType: hard
 
@@ -2914,7 +2926,7 @@ __metadata:
     "@sveltejs/kit": "npm:^2.57.0"
     "@sveltejs/vite-plugin-svelte": "npm:^7.0.0"
     "@types/node": "npm:^25"
-    dompurify: "npm:^3.3.1"
+    dompurify: "npm:^3.4.10"
     eslint: "npm:^10.4.0"
     marked: "npm:^18.0.5"
     mermaid: "npm:^11.15.0"
