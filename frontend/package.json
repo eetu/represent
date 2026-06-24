@@ -16,19 +16,19 @@
 		"validate": "yarn typecheck && yarn lint && yarn format"
 	},
 	"dependencies": {
-		"dompurify": "^3.4.10",
+		"dompurify": "^3.4.11",
 		"marked": "^18.0.5",
 		"mermaid": "^11.15.0"
 	},
 	"devDependencies": {
 		"@anarkisti/eslint-config": "^1.0.0",
 		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.57.0",
+		"@sveltejs/kit": "^2.65.2",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@types/node": "^25",
-		"eslint": "^10.4.0",
+		"eslint": "^10.5.0",
 		"prettier": "^3.8.3",
-		"prettier-plugin-svelte": "^4.0.1",
+		"prettier-plugin-svelte": "^4.1.1",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.4.6",
 		"typescript": "^6.0.2",
