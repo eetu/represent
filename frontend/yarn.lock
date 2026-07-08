@@ -40,14 +40,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@braintree/sanitize-url@npm:^7.1.1":
+"@braintree/sanitize-url@npm:^7.1.2":
   version: 7.1.2
   resolution: "@braintree/sanitize-url@npm:7.1.2"
   checksum: 10/d9626ff8f8eb5e192cd055e6e743449c21102c76bb59e405b7028fe56230fa080bfcc80dfb1e21850a6876e75adda9f7b3c888cf0685942bb74da4d2866d6ec3
   languageName: node
   linkType: hard
 
-"@chevrotain/types@npm:~11.1.1":
+"@chevrotain/types@npm:~11.1.2":
   version: 11.1.2
   resolution: "@chevrotain/types@npm:11.1.2"
   checksum: 10/ad39d7651a20b05ead9b4374f98afc39915118dda29678c2b623571aa3da3018a0f3fb799d1809605cafcae59cba637d640855ea0f97b9b01d0900d77d6781fe
@@ -385,12 +385,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mermaid-js/parser@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "@mermaid-js/parser@npm:1.1.1"
+"@mermaid-js/parser@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@mermaid-js/parser@npm:1.2.0"
   dependencies:
-    "@chevrotain/types": "npm:~11.1.1"
-  checksum: 10/9f3645fd055c0800c16a3e7eab1ce7f05736c352ab48996e9c64fb21b27c25a5987636040816b1bb16384a4434744cecbdf746c152ef80e0bc712972cb58deed
+    "@chevrotain/types": "npm:~11.1.2"
+  checksum: 10/278ae28edd452c9bcee3723a2d45a6a3f174700cb80fc907b9a5212f2ce449c9a5a6f7d45372bb18b6d633f8040dff4c4d2533b6a3c8d3f021903b3d6ccea799
   languageName: node
   linkType: hard
 
@@ -561,9 +561,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sveltejs/kit@npm:^2.67.0":
-  version: 2.67.0
-  resolution: "@sveltejs/kit@npm:2.67.0"
+"@sveltejs/kit@npm:^2.69.0":
+  version: 2.69.0
+  resolution: "@sveltejs/kit@npm:2.69.0"
   dependencies:
     "@standard-schema/spec": "npm:^1.0.0"
     "@sveltejs/acorn-typescript": "npm:^1.0.9"
@@ -590,7 +590,7 @@ __metadata:
       optional: true
   bin:
     svelte-kit: svelte-kit.js
-  checksum: 10/708b815de9b7f1e685e7169dae578ad269a9b32a0e97ba39caedb4f8bde22b8fb2c5696a05061a7b6564d798ed9aa8e04941c0301ae2d1bebe63a5ba915c5644
+  checksum: 10/43d7bb3f989e0d8e11167f8bb80e25197aa01d33d6f83fee4486e548a3accb664e03f83e42280c9b41b4307e1c1e70d3288c5d2267205663870789d450163920
   languageName: node
   linkType: hard
 
@@ -1283,7 +1283,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cytoscape@npm:^3.33.1":
+"cytoscape@npm:^3.33.3":
   version: 3.34.0
   resolution: "cytoscape@npm:3.34.0"
   checksum: 10/5bbc169798829b1a0eaadcad2707e7762e7ba1a2bcd5dbeaf75b89eb2d2ab9211e51d96b24c1f5807e329ac44c50913062464e2af11c528a1255969a36b45268
@@ -1653,7 +1653,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dayjs@npm:^1.11.19":
+"dayjs@npm:^1.11.20":
   version: 1.11.21
   resolution: "dayjs@npm:1.11.21"
   checksum: 10/dd16f9f2706b61b90e3c346a3211ac3afd9e26193136ce0e87f70bf74d1c17a447bceb230a88b175467fc9f5e3243d8c1544b9897092a12d9c80ee44d338dcb6
@@ -1709,19 +1709,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.3.1":
-  version: 3.4.8
-  resolution: "dompurify@npm:3.4.8"
-  dependencies:
-    "@types/trusted-types": "npm:^2.0.7"
-  dependenciesMeta:
-    "@types/trusted-types":
-      optional: true
-  checksum: 10/d661322889a8938bfb99ee27853e9e78661949398e803f344865fd94f8378a494efadd329faea0b16e8085efae1bfeed5f5df372909c3a2be3e583686a0a48fa
-  languageName: node
-  linkType: hard
-
-"dompurify@npm:^3.4.11":
+"dompurify@npm:^3.3.3, dompurify@npm:^3.4.11":
   version: 3.4.11
   resolution: "dompurify@npm:3.4.11"
   dependencies:
@@ -1988,9 +1976,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^10.5.0":
-  version: 10.5.0
-  resolution: "eslint@npm:10.5.0"
+"eslint@npm:^10.6.0":
+  version: 10.6.0
+  resolution: "eslint@npm:10.6.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.8.0"
     "@eslint-community/regexpp": "npm:^4.12.2"
@@ -2029,7 +2017,7 @@ __metadata:
       optional: true
   bin:
     eslint: bin/eslint.js
-  checksum: 10/28882f9b00803fca938015894d6e1ac2c80e00c1349385764f54ac4c0707c33fd0e32b678845c54ea0bc8ae04d59d7aa93d68dbd835e5e4833c65bf9b15ea91f
+  checksum: 10/36d02cdbe37668e601f255917c605d10a5d06d278648dc72cec21fe23b7b60a53453241b32c382ba8107533cacba70aeec97581cc4f4bb591544b1ada2516335
   languageName: node
   linkType: hard
 
@@ -2351,7 +2339,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"katex@npm:^0.16.25":
+"katex@npm:^0.16.45":
   version: 0.16.47
   resolution: "katex@npm:0.16.47"
   dependencies:
@@ -2593,32 +2581,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mermaid@npm:^11.15.0":
-  version: 11.15.0
-  resolution: "mermaid@npm:11.15.0"
+"mermaid@npm:^11.16.0":
+  version: 11.16.0
+  resolution: "mermaid@npm:11.16.0"
   dependencies:
-    "@braintree/sanitize-url": "npm:^7.1.1"
+    "@braintree/sanitize-url": "npm:^7.1.2"
     "@iconify/utils": "npm:^3.0.2"
-    "@mermaid-js/parser": "npm:^1.1.1"
+    "@mermaid-js/parser": "npm:^1.2.0"
     "@types/d3": "npm:^7.4.3"
     "@upsetjs/venn.js": "npm:^2.0.0"
-    cytoscape: "npm:^3.33.1"
+    cytoscape: "npm:^3.33.3"
     cytoscape-cose-bilkent: "npm:^4.1.0"
     cytoscape-fcose: "npm:^2.2.0"
     d3: "npm:^7.9.0"
     d3-sankey: "npm:^0.12.3"
     dagre-d3-es: "npm:7.0.14"
-    dayjs: "npm:^1.11.19"
-    dompurify: "npm:^3.3.1"
+    dayjs: "npm:^1.11.20"
+    dompurify: "npm:^3.3.3"
     es-toolkit: "npm:^1.45.1"
-    katex: "npm:^0.16.25"
+    katex: "npm:^0.16.45"
     khroma: "npm:^2.1.0"
     marked: "npm:^16.3.0"
     roughjs: "npm:^4.6.6"
     stylis: "npm:^4.3.6"
     ts-dedent: "npm:^2.2.0"
     uuid: "npm:^11.1.0 || ^12 || ^13 || ^14.0.0"
-  checksum: 10/4a3f8ac77aba326c96adc2325f550421b6f05f1592998fcf80dfeb9fbcd751e2a0a030092559bd258e45bba60c0ad1e7415ad46ff5c165b1d9a469835e927e9a
+  checksum: 10/9984131ac3e3c7d49dbbb7847a995d69766a26c88409188bbabce8775b93496a3e435e7b6407119342b8c429435184b81a361a43e12bca48650c108873e0d5bd
   languageName: node
   linkType: hard
 
@@ -2898,12 +2886,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^3.8.5":
-  version: 3.8.5
-  resolution: "prettier@npm:3.8.5"
+"prettier@npm:^3.9.4":
+  version: 3.9.4
+  resolution: "prettier@npm:3.9.4"
   bin:
     prettier: bin/prettier.cjs
-  checksum: 10/61b59be2f6fdb06850aa8add77a4c3ea31d9536ae25ee9206cdd7a52de968276270a69f4bb71a6e23cbe7bfe6705a74eebdfae2022659c4ccea246e45c290c94
+  checksum: 10/4a0dc4389d442f5aca0beb12778c90b6ceb9831940b01a1df5eba9150b5ce96fa52eda9074a10a370e732adc03e2f645597dfd8b7e3f1e94dee28df01004a0fd
   languageName: node
   linkType: hard
 
@@ -2934,14 +2922,14 @@ __metadata:
   dependencies:
     "@anarkisti/eslint-config": "npm:^1.1.0"
     "@sveltejs/adapter-static": "npm:^3.0.10"
-    "@sveltejs/kit": "npm:^2.67.0"
+    "@sveltejs/kit": "npm:^2.69.0"
     "@sveltejs/vite-plugin-svelte": "npm:^7.0.0"
     "@types/node": "npm:^25"
     dompurify: "npm:^3.4.11"
-    eslint: "npm:^10.5.0"
+    eslint: "npm:^10.6.0"
     marked: "npm:^18.0.5"
-    mermaid: "npm:^11.15.0"
-    prettier: "npm:^3.8.5"
+    mermaid: "npm:^11.16.0"
+    prettier: "npm:^3.9.4"
     prettier-plugin-svelte: "npm:^4.1.1"
     svelte: "npm:^5.56.4"
     svelte-check: "npm:^4.7.1"
