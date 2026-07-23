@@ -32,7 +32,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5em;
-		font-family: var(--halo-font-heading);
+		font-family: var(--halo-font-body);
 		font-size: 1.4rem;
 		font-weight: 600;
 		letter-spacing: -0.04em;

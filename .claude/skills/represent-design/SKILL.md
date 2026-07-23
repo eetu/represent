@@ -23,9 +23,14 @@ round caps/joins, 24×24 viewBox. Canonical implementation:
 ## 2. Wordmark
 
 Text: **`represent`** (one word, lowercase) — `re` in `--halo-text-main`,
-`present` in `--halo-accent` (the `.accent` span; presenting is the product).
-Font: `--halo-font-heading` (Space Grotesk). The glyph sits to its left with a
-`0.5em` gap.
+`present` in `--halo-accent` (the `.accent` span). Font: canonical Inter
+(`--halo-font-body`). The glyph sits to its left with a `0.5em` gap.
+
+**Documented override — accent form.** represent takes the family's sanctioned
+_clever letter-run_ exception instead of the canonical trailing period:
+accenting `present` reveals the real word "present" inside "represent"
+(presenting is the product). It's still exactly one accent element, lowercase,
+`-0.04em` — only the accent's shape differs from the default `.` dot.
 
 ## 3. Layout
 
