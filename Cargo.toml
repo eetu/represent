@@ -12,14 +12,14 @@ version = "0.1.0"
 [workspace.dependencies]
 axum = { version = "0.8", features = ["macros", "tokio", "tracing"] }
 axum-extra = { version = "0.12", features = ["cookie", "cookie-signed"] }
-rusqlite = { version = "0.39", features = ["bundled"] }
+rusqlite = { version = "0.40", features = ["bundled"] }
 openidconnect = "4"
 url = "2"
 hex = "0.4"
 rand = "0.10"
 time = "0.3"
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.6", features = ["trace", "fs", "set-header"] }
+tower-http = { version = "0.7", features = ["trace", "fs", "set-header"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -32,5 +32,5 @@ mime_guess = "2"
 sha2 = "0.11"
 base64 = "0.22"
 dotenvy = "0.15"
-zip = { version = "7", default-features = false, features = ["deflate"] }
+zip = { version = "8", default-features = false, features = ["deflate"] }
 tempfile = "3"
