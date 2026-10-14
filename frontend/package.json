@@ -17,8 +17,8 @@
 	},
 	"dependencies": {
 		"dompurify": "^3.4.16",
-		"marked": "^18.0.14",
-		"mermaid": "^12.0.0"
+		"marked": "^18.1.0",
+		"mermaid": "^12.1.0"
 	},
 	"devDependencies": {
 		"@anarkisti/eslint-config": "^1.1.0",
@@ -26,7 +26,7 @@
 		"@sveltejs/kit": "^2.70.3",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@types/node": "^26",
-		"eslint": "^10.11.0",
+		"eslint": "^10.12.0",
 		"prettier": "^3.9.9",
 		"prettier-plugin-svelte": "^4.1.1",
 		"svelte": "^5.57.1",
